@@ -13,9 +13,12 @@ services:
       - .:/circleci-test:cached
       - bundler-data:/usr/local/bundle/:cached
       - ssh-data:/ssh:ro
+    #tty: true
+    #stdin_open: true
     environment:
       - RAILS_ENV=$RAILS_ENV
       - SSH_AUTH_SOCK=/ssh/auth/sock
+      - DATABASE_URL=postgres://postgres:@db
     depends_on:
       - db
       - redis

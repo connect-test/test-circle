@@ -1,0 +1,45 @@
+version: '3'
+services:
+  db:
+    image: postgres:9.6
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+
+  app: &app
+    build: .
+    command: bash
+    volumes:
+      - ../../gems:/localgems:cached
+      - .:/circleci-test:cached
+      - bundler-data:/usr/local/bundle/:cached
+      - ssh-data:/ssh:ro
+    environment:
+      - RAILS_ENV=$RAILS_ENV
+      - SSH_AUTH_SOCK=/ssh/auth/sock
+    depends_on:
+      - db
+      - redis
+
+  api:
+    <<: *app
+    command: bash -c "rm -f tmp/pids/server.pid && foreman start -f Procfile"
+    ports:
+      - "3000:3000"
+
+  sidekiq:
+    <<: *app
+    command: bundle exec sidekiq -C config/sidekiq.yml
+
+  redis:
+    image: redis:alpine
+
+volumes:
+  bundler-data:
+    driver: local
+
+  pg-data:
+    driver: local
+
+  ssh-data:
+    external:
+      name: ssh_data

@@ -1,0 +1,11 @@
+cp .env-sample .env &&
+docker volume create --name=ssh_data &&
+docker-compose build app &&
+docker-compose run app bash -c '
+  (bundle check || bundle install) &&
+  rake db:drop &&
+  rake db:create &&
+  rake db:migrate &&
+  rake db:seed
+' &&
+docker-compose up

@@ -1,0 +1,16 @@
+default:
+  host: localhost
+  port: 6379
+development:
+  db: 0
+  host: redis
+  namespace: circleci_test_development
+test:
+  db: 1
+  namespace: circleci_test_test
+staging:
+  db: 2
+  namespace: connect_staging
+production:
+  db: 3
+  namespace: connect_production

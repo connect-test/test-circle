@@ -1,0 +1,2 @@
+class FavouriteFavicon < ApplicationRecord
+end

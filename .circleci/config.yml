@@ -6,60 +6,45 @@ version: 2
 jobs:
   build:
     docker:
-      # specify the version you desire here
-      #- image: circleci/ruby:2.4.1-node-browsers
       - image: circleci/ruby:2.4.1-node-browsers
         environment:
         - RAILS_ENV: test
+        - BUNDLE_JOBS: 3
+        - BUNDLE_RETRY: 3
+        - BUNDLE_PATH: vendor/bundle
         - PGHOST: 127.0.0.1
         - PGUSER: root
-
-    # Service container image available at `host: localhost`
-
       - image: circleci/postgres:9.6.2-alpine
         environment:
         - POSTGRES_USER: root
         - POSTGRES_DB: circle_test_test
-
-      # Specify service dependencies here if necessary
-      # CircleCI maintains a library of pre-built images
-      # documented at https://circleci.com/docs/2.0/circleci-images/
-      # - image: circleci/postgres:9.4
 
     working_directory: ~/circleci
 
     steps:
       - checkout
 
+      - run: cp .env-sample .env
       - run:
-          name: copy variables
-          command: |
-            cp .env-sample .env
+          name: Install latest Bundler
+          command: gem install bundler
 
       # Download and cache dependencies
       - restore_cache:
           keys:
-          - v1-dependencies-{{ checksum "Gemfile.lock" }}
+          - v2-dependencies-{{ checksum "Gemfile.lock" }}
           # fallback to using the latest cache if no exact match is found
-          - v1-dependencies-
+          - v2-dependencies-
 
       - run:
           name: install dependencies
           command: |
-            bundle install --jobs=4 --retry=3 --path vendor/bundle
+            bundle check || bundle install
 
       - save_cache:
           paths:
             - vendor/bundle
-          key: v1-dependencies-{{ checksum "Gemfile.lock" }}
-
-      - run:
-          name: show variable
-          command: |
-            echo $DATABASE_URL
-
-      # Database setup
-      #- run: sudo apt install postgresql-client
+          key: v2-dependencies-{{ checksum "Gemfile.lock" }}
 
       - run:
           name: Wait for DB
@@ -72,12 +57,10 @@ jobs:
           name: run tests
           command: |
             mkdir /tmp/test-results
-            TEST_FILES="$(circleci tests glob "spec/**/*_spec.rb" | circleci tests split --split-by=timings)"
 
             bundle exec rspec --format progress \
                             --out /tmp/test-results/rspec.xml \
-                            --format progress \
-                            "${TEST_FILES}"
+                            --format progress
 
       # collect reports
       - store_test_results:
